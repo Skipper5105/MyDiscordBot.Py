@@ -1,7 +1,10 @@
+import threading
+
 import discord  # Importiere discord.py
 import os  # Importiere os
 import dotenv  # Importiere dotenv
 import asyncio
+from flask import Flask
 # Für die Spotify Intergration
 import yt_dlp  # Importiere yt-dlp
 from discord.ext import commands  # Importiere commands von discord.ext
@@ -11,6 +14,20 @@ dotenv.load_dotenv()  # Lade die Umgebungsvariablen aus der .env-Datei
 token = os.getenv('DISCORD_TOKEN')  # Hole den Discord-Token aus der .env-Datei
 log_channel_id = 1423345957856083968  # Ersetze mit der ID deines Log-Kanals
 
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot läuft"
+
+# Web app
+def run_web():
+    port = int(os.getenv('PORT', 8000))
+    app.run(host="::", port=8000)
+
+# Starten von Flask in anderen Thread
+threading.Thread(target=run_web).start()
 # Bot initialisieren
 intents = discord.Intents.default()  # Erstelle ein Intents-Objekt
 intents.members = True  # Aktiviere die Mitglieder-Intents
