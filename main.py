@@ -2,10 +2,11 @@ import discord  # Importiere discord.py
 import os  # Importiere os
 import dotenv  # Importiere dotenv
 import asyncio
-# Für die Spotify Intergration
-import yt_dlp  # Importiere yt-dlp
 from discord.ext import commands  # Importiere commands von discord.ext
-import datetime  # Importiere datetime
+from discord.ext import tasks
+from dotenv import load_dotenv
+from itertools import cycle
+
 
 dotenv.load_dotenv()  # Lade die Umgebungsvariablen aus der .env-Datei
 token = os.getenv('DISCORD_TOKEN')  # Hole den Discord-Token aus der .env-Datei
@@ -17,12 +18,19 @@ intents.members = True  # Aktiviere die Mitglieder-Intents
 intents.message_content = True  # Aktiviere die Nachrichten-Intents
 bot = commands.Bot(
     command_prefix="!", intents=intents
-)  # Erstelle einen Bot-Objekt mit dem Befehlspräfix "!" und den Intents
+)
+
+bot_statuses = cycle(["Status 1", "Teste", "Error 404 Menschen nicht Gefunden"])
+
+@tasks.loop(seconds=15)
+async def change_status():
+    await bot.change_presence(activity=discord.Game(next(bot_statuses)))
 
 
 @bot.event
 async def on_ready():
     print(f'Logged on as {bot.user}!')
+    change_status.start()
 
 
 # Hilfsfunktion zur Überprüfung der Berechtigungen
@@ -45,6 +53,7 @@ async def send_log(channel_id, message):
             await channel.send(message)
         except Exception as e:
             print(f"Fehler beim Senden der Log-Nachricht: {e}")
+
 
 
 # Clear Chat Command
@@ -138,8 +147,14 @@ async def timeout(ctx,
     log_message = f"**Benutzer:** {user.mention}\n**Sperrdauer:** {duration} Sekunden\n**Grund:** {reason}\n**Server:** {ctx.guild.name}\n**Kommando** ausgeführt von **{ctx.author.mention}**"
     await send_log(log_channel_id, log_message)
 
+async def load():
+    for filename in os.listdir("./cogs"):
+        if filename.endswith(".py"):
+            await bot.load_extension(f"cogs.{filename[:-3]}")
 
-# Bot starten
-if token:
-    bot.run("MTQwNDc2NjkwOTA2MDA5MTkyNA.GlTQG7.oBoTv0NKWJnzUqTtGDZkB9wo-l8n0hXsdtS1Z0")
+async def main():
+    async with bot:
+        await load()
+        await bot.start(token)
 
+asyncio.run(main())
