@@ -1,10 +1,7 @@
-import threading
-
 import discord  # Importiere discord.py
 import os  # Importiere os
 import dotenv  # Importiere dotenv
 import asyncio
-from flask import Flask
 # Für die Spotify Intergration
 import yt_dlp  # Importiere yt-dlp
 from discord.ext import commands  # Importiere commands von discord.ext
@@ -14,20 +11,6 @@ dotenv.load_dotenv()  # Lade die Umgebungsvariablen aus der .env-Datei
 token = os.getenv('DISCORD_TOKEN')  # Hole den Discord-Token aus der .env-Datei
 log_channel_id = 1423345957856083968  # Ersetze mit der ID deines Log-Kanals
 
-
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot läuft"
-
-# Web app
-def run_web():
-    port = int(os.getenv('PORT', 8000))
-    app.run(host="::", port=8000)
-
-# Starten von Flask in anderen Thread
-threading.Thread(target=run_web).start()
 # Bot initialisieren
 intents = discord.Intents.default()  # Erstelle ein Intents-Objekt
 intents.members = True  # Aktiviere die Mitglieder-Intents
@@ -37,13 +20,9 @@ bot = commands.Bot(
 )  # Erstelle einen Bot-Objekt mit dem Befehlspräfix "!" und den Intents
 
 
-# Client-Klasse definieren
-class MyClient(discord.Client):
-
-    async def on_ready(
-            self):  # Methode, die aufgerufen wird, wenn der Bot bereit ist
-        print(f'Logged on as {self.user}!'
-              )  # Gib eine Nachricht aus, dass der Bot bereit ist
+@bot.event
+async def on_ready():
+    print(f'Logged on as {bot.user}!')
 
 
 # Hilfsfunktion zur Überprüfung der Berechtigungen
@@ -61,7 +40,7 @@ async def check_permissions(
 # Funktion zum Senden von Log-Nachrichten
 async def send_log(channel_id, message):
     channel = bot.get_channel(channel_id)
-    if channel:
+    if channel and isinstance(channel, (discord.TextChannel, discord.DMChannel, discord.VoiceChannel, discord.Thread)):
         try:
             await channel.send(message)
         except Exception as e:
@@ -102,7 +81,7 @@ async def verwarn(ctx, user: discord.Member, *, reason="Kein Grund angegeben"):
         print(f"Konnte Nachricht an Benutzer senden: {user.id}")
 
     # Log-Nachricht erstellen
-    log_message = f"**Benutzer:** {user.mention}\n**Verwarnungsgrund:** {reason}\n**Server:** {ctx.guild.name}"
+    log_message = f"**Benutzer:** {user.mention}\n**Verwarnungsgrund:** {reason}\n**Server:** {ctx.guild.name}\n**Kommando** ausgeführt von **{ctx.author.mention}**"
     await send_log(log_channel_id, log_message)
 
 
@@ -129,7 +108,7 @@ async def stummschalten(ctx,
         print(f"Konnte Nachricht an Benutzer senden: {user.id}")
 
     # Log-Nachricht erstellen
-    log_message = f"**Benutzer:** {user.mention}\n**Stummschaltungsdauer:** {duration} Sekunden\n**Grund:** {reason}\n**Server:** {ctx.guild.name}"
+    log_message = f"**Benutzer:** {user.mention}\n**Stummschaltungsdauer:** {duration} Sekunden\n**Grund:** {reason}\n**Server:** {ctx.guild.name}\n**Kommando** ausgeführt von **{ctx.author.mention}**"
     await send_log(log_channel_id, log_message)
 
 
@@ -153,12 +132,14 @@ async def timeout(ctx,
             f"Du wurdest auf dem Server {ctx.guild.name} für {duration} Sekunden gesperrt wegen: {reason}"
         )
     except discord.errors.Forbidden:
-        print(f"Konnte Nachricht an Benutzer senden: {user.id}")
+        print(f"Konnte Nachricht an Benutzer senden: {ctx.author.mention}")
 
     # Log-Nachricht erstellen
-    log_message = f"**Benutzer:** {user.mention}\n**Sperrdauer:** {duration} Sekunden\n**Grund:** {reason}\n**Server:** {ctx.guild.name}"
+    log_message = f"**Benutzer:** {user.mention}\n**Sperrdauer:** {duration} Sekunden\n**Grund:** {reason}\n**Server:** {ctx.guild.name}\n**Kommando** ausgeführt von **{ctx.author.mention}**"
     await send_log(log_channel_id, log_message)
 
 
 # Bot starten
-bot.run(token)
+if token:
+    bot.run("MTQwNDc2NjkwOTA2MDA5MTkyNA.GlTQG7.oBoTv0NKWJnzUqTtGDZkB9wo-l8n0hXsdtS1Z0")
+
